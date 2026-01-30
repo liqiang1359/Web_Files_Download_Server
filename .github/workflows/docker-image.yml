@@ -1,8 +1,8 @@
-name: Docker Image CI
+name:  Web_Files_Download_Server
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main" ]·
   pull_request:
     branches: [ "main" ]
 
