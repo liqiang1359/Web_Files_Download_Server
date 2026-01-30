@@ -5,21 +5,26 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-push:
+  build-and-temporary-expose:
     runs-on: ubuntu-latest
     steps:
+    # 1️⃣ 检出代码
     - uses: actions/checkout@v4
 
+    # 2️⃣ Docker 登录
     - name: Login to DockerHub
       run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
+    # 3️⃣ Build 镜像
     - name: Build Docker image
       run: docker build . -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/web-files-server:latest
 
+    # 4️⃣ Push 镜像
     - name: Push Docker image
       run: docker push ${{ secrets.DOCKER_USERNAME }}/web-files-server:latest
 
     # ================= 临时访问部分 =================
+    # 5️⃣ 安装 ngrok
     - name: Install ngrok
       run: |
         wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
@@ -27,11 +32,18 @@ jobs:
         chmod +x ngrok
         sudo mv ngrok /usr/local/bin
 
+    # 6️⃣ 运行 Web 服务容器
     - name: Run Web Server
       run: docker run -d -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/web-files-server:latest
 
+    # 7️⃣ 暴露临时公网 URL
     - name: Expose with ngrok
       run: |
         ngrok http 8080 --log=stdout > ngrok.log &
         sleep 5
-        cat ngrok.log | grep -o "https://[0-9a-z]*\.ngrok.io"
+        # 打印临时 URL
+        curl -s localhost:4040/api/tunnels | grep -o 'https://[0-9a-z]*\.ngrok.io'
+
+    # 8️⃣ 保持服务 60 秒供访问
+    - name: Keep service alive briefly
+      run: sleep 60
