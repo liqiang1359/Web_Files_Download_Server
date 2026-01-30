@@ -32,7 +32,7 @@ jobs:
         chmod +x ngrok
         sudo mv ngrok /usr/local/bin
 
-    # 6️⃣ 运行 Web 服务 + ngrok 暴露
+    # 6️⃣ 启动容器 + ngrok
     - name: Run Web Server and expose with ngrok
       run: |
         echo "Starting Docker container..."
@@ -42,10 +42,12 @@ jobs:
         ngrok http 8080 --log=stdout > ngrok.log &
 
         echo "Waiting for ngrok to initialize..."
-        sleep 10
+        sleep 20   # 等待 ngrok API 就绪
 
         echo "Temporary public URL:"
-        curl -s localhost:4040/api/tunnels | grep -o 'https://[0-9a-z]*\.ngrok.io'
+        # 使用 jq 解析 ngrok JSON 输出
+        URL=$(curl -s localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url')
+        echo "$URL"
 
         echo "Service will be available for 5 minutes..."
         sleep 300
