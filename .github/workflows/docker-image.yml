@@ -7,7 +7,6 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
 
@@ -19,3 +18,19 @@ jobs:
 
     - name: Push Docker image
       run: docker push ${{ secrets.DOCKER_USERNAME }}/web-files-server:latest
+
+    # ================= 临时访问部分 =================
+    - name: Install ngrok
+      run: |
+        wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
+        unzip ngrok-stable-linux-amd64.zip
+        sudo mv ngrok /usr/local/bin
+
+    - name: Run Web Server
+      run: docker run -d -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/web-files-server:latest
+
+    - name: Expose with ngrok
+      run: |
+        ./ngrok http 8080 --log=stdout > ngrok.log &
+        sleep 5
+        cat ngrok.log | grep -o "https://[0-9a-z]*\.ngrok.io"
