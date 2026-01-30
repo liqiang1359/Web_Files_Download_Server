@@ -15,7 +15,7 @@ jobs:
     - name: Login to DockerHub
       run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    # 3️⃣ Build 镜像
+    # 3️⃣ Build Docker 镜像
     - name: Build Docker image
       run: docker build . -f Dockerfile -t ${{ secrets.DOCKER_USERNAME }}/web-files-server:latest
 
@@ -32,18 +32,20 @@ jobs:
         chmod +x ngrok
         sudo mv ngrok /usr/local/bin
 
-    # 6️⃣ 运行 Web 服务容器
-    - name: Run Web Server
-      run: docker run -d -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/web-files-server:latest
-
-    # 7️⃣ 暴露临时公网 URL
-    - name: Expose with ngrok
+    # 6️⃣ 运行 Web 服务 + ngrok 暴露
+    - name: Run Web Server and expose with ngrok
       run: |
+        echo "Starting Docker container..."
+        docker run -d -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/web-files-server:latest
+
+        echo "Starting ngrok..."
         ngrok http 8080 --log=stdout > ngrok.log &
-        sleep 5
-        # 打印临时 URL
+
+        echo "Waiting for ngrok to initialize..."
+        sleep 10
+
+        echo "Temporary public URL:"
         curl -s localhost:4040/api/tunnels | grep -o 'https://[0-9a-z]*\.ngrok.io'
 
-    # 8️⃣ 保持服务 60 秒供访问
-    - name: Keep service alive briefly
-      run: sleep 60
+        echo "Service will be available for 5 minutes..."
+        sleep 300
